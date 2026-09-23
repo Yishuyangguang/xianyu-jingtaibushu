@@ -76,37 +76,46 @@ export default {
     }
 
     /* ==========================================================
-       🌐 1. 公开短链单页访问 (/p/:slug) - 到期自动拦截封存
+       🌐 1. 公开短链单页访问 (/p/:slug) - 全局到期双向封锁守卫
     ========================================================== */
     if (url.pathname.startsWith("/p/")) {
       const rawSlug = url.pathname.slice(3).replace(/\/+$/, "").trim();
       if (!rawSlug || !bucket) return new Response("Page Not Found", { status: 404 });
 
+      // 🌟 核心双向封锁机制：检查全局授权状态
       const sysRecord = await getSystemLicenseRecord();
       if (!sysRecord.licensed) {
+        // 未授权或已到期，直接熔断 R2 读取，返回高奢版封存提示页
         return new Response(`
           <!DOCTYPE html>
           <html lang="zh-CN">
           <head>
-            <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
             <title>时空已封存 - 印记</title>
             <style>
-              body { font-family: -apple-system, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; padding: 20px;}
-              .box { text-align: center; background: #1e293b; padding: 40px; border-radius: 24px; border: 1px dashed #f59e0b; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-width: 400px; width: 100%; }
-              h1 { font-size: 24px; color: #f59e0b; margin: 0 0 12px; letter-spacing: 1px; }
-              p { font-size: 14px; color: #94a3b8; margin-bottom: 24px; line-height: 1.6; }
-              button { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; padding: 12px 24px; border-radius: 12px; font-weight: bold; font-size: 15px; cursor: pointer; box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3); }
-              #wx { display: none; margin-top: 24px; animation: fadeIn 0.4s; }
-              img { width: 100%; max-width: 220px; border-radius: 16px; border: 4px solid #fff; }
+              body { font-family: -apple-system, sans-serif; background: #020617; color: #f8fafc; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; padding: 20px;}
+              .box { text-align: center; background: rgba(15, 23, 42, 0.88); padding: 40px 30px; border-radius: 24px; border: 1.5px solid rgba(245, 158, 11, 0.4); box-shadow: 0 20px 60px rgba(0,0,0,0.8); max-width: 400px; width: 100%; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+              h1 { font-size: 22px; color: #f8fafc; margin: 0 0 12px; letter-spacing: 1px; font-weight: 900; }
+              p { font-size: 14px; color: #94a3b8; margin-bottom: 26px; line-height: 1.7; }
+              button { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; border: none; padding: 14px 24px; border-radius: 12px; font-weight: 800; font-size: 15px; cursor: pointer; box-shadow: 0 6px 16px rgba(245, 158, 11, 0.3); transition: all 0.2s ease; width: 100%; }
+              button:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4); }
+              #wx { display: none; margin-top: 24px; animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+              img { width: 100%; max-width: 200px; border-radius: 12px; border: 4px solid #fff; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
               @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
             </style>
           </head>
           <body>
             <div class="box">
-              <h1>⏳ 专属时空已封存</h1>
-              <p>很抱歉，当前专属网页的服务授权期限已到达终点，核心数据已被安全冻结保护。</p>
-              <button onclick="document.getElementById('wx').style.display='block'">联系管理员续费解锁</button>
-              <div id="wx"><img src="/微信二维码.jpg" alt="微信咨询"></div>
+              <div style="font-size: 48px; margin-bottom: 16px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));">🔐</div>
+              <h1>专属时空已封存</h1>
+              <p>很抱歉，当前专属网页的服务授权已到达终点。<br>核心数据已被安全冻结保护。</p>
+              <button onclick="document.getElementById('wx').style.display='block'">💬 联系管理员续费解锁</button>
+              <div id="wx">
+                <!-- 🌟 核心防裂图修复：动态相对路径与绝对路径双重兜底 -->
+                <img src="../微信二维码.jpg" onerror="this.onerror=null; this.src='/微信二维码.jpg';" alt="微信咨询">
+                <p style="font-size:12px; color:#cbd5e1; margin-top:12px; margin-bottom:0;">长按或扫码添加客服获取卡密</p>
+              </div>
             </div>
           </body>
           </html>
